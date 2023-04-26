@@ -1,0 +1,1 @@
+from .views import dish_namespace
