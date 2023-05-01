@@ -11,6 +11,7 @@ class Dish(db.Model):
     instructions = db.Column(db.String(1000), nullable=False)
     user_id=db.Column(db.Integer,db.ForeignKey("users.id"),nullable=False)
     date_posted=db.Column(db.DateTime,default=datetime.utcnow)
+    dish_image_url=db.Column(db.String(1000))
     user_likes=db.relationship("User",backref=db.backref('dishes_liked', lazy='dynamic'),cascade="all, delete",secondary="like")
 
    

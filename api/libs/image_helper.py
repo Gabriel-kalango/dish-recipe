@@ -16,7 +16,7 @@ def get_path(filename:str=None,folder:str=None)->str:
     return IMAGE_SET.path(filename,folder)
 
 
-def find_image_format(filename:str,folder:str)->Union[str,None]:
+def find_image_format(filename:str,folder:str=None)->Union[str,None]:
     """takes a filename and return an image on any of the accepted format"""
     for _format in IMAGES:
         image=f"{filename}.{_format}"

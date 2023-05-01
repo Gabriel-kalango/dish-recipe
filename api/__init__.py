@@ -20,6 +20,8 @@ def create_app(config=config_dict["dev"]):
     configure_uploads(app,IMAGE_SET)
     migrate=Migrate(app,db)
     socket=SocketIO(app)
+    socket.init_app(app)
+    
     jwt=JWTManager(app)
     api=Api(app)
     api.add_namespace(user_namespace)
