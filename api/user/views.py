@@ -1,7 +1,7 @@
 from flask_restx import abort,Resource
 from werkzeug.security import check_password_hash,generate_password_hash
-from flask_jwt_extended import create_access_token,create_refresh_token,get_jwt_identity
-from ..models import User
+from flask_jwt_extended import create_access_token,create_refresh_token,get_jwt_identity,get_jwt,jwt_required
+from ..models import User,BlockliskModel
 from ..schema import user_namespace,User_login,User_signup
 
 @user_namespace.route("/register")
@@ -33,3 +33,26 @@ class UserLogin(Resource):
             return {"access_token":access_token,"refresh_token":refresh_token}
         return {"message":"invalid credentials"}
         
+@user_namespace.route("/logout")   
+class Logout(Resource):
+    @jwt_required()
+    def post(self):
+        jti=get_jwt().get("jti")
+        j_ti=BlockliskModel(jwt=jti)
+        j_ti.save()
+        return {"message":"user has been logged out "}
+    
+@user_namespace.route('/refresh')
+class Refresh(Resource):
+
+    @jwt_required(refresh=True)
+    def post(self):
+        """
+            Generate Refresh Token
+        """
+
+        id= get_jwt_identity()
+
+        access_token = create_access_token(identity=id)
+
+        return {"access_token": access_token},201

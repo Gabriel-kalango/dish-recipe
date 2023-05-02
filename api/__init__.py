@@ -29,7 +29,7 @@ def create_app(config=config_dict["dev"]):
 
     @jwt.token_in_blocklist_loader
     def check_if_token_in_blocklist(jwt_header, jwt_payload):
-        return  BlockliskModel.query.filter_by(jwt=jwt_payload["jti"] ).first()
+        return  BlockliskModel.query.filter_by(jwt=jwt_payload["jti"] ).first() is not None
 
  
     @jwt.revoked_token_loader
