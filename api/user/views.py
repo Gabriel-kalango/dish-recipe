@@ -24,15 +24,16 @@ class UserSignin(Resource):
 class UserLogin(Resource):
     #endpoint for logging in users
     @user_namespace.expect(User_login)
+    
     def post(self):
         data=user_namespace.payload
         user= User.query.filter(User.email==data.get("email")).first()
         if user and check_password_hash(user.password,data.get("password")):
             access_token=create_access_token(identity=user.id)
             refresh_token=create_refresh_token(identity=user.id)
-            return {"access_token":access_token,"refresh_token":refresh_token}
+            return {"id":user.id,"firstname":user.first_name,"last_name":user.last_name,"email":user.email,"access_token":access_token,"refresh_token":refresh_token}
         return {"message":"invalid credentials"}
-        
+#endpoint for logging out users      
 @user_namespace.route("/logout")   
 class Logout(Resource):
     @jwt_required()

@@ -12,17 +12,22 @@ import traceback
 
 @dish_namespace.route("")
 class Recipes(Resource):
-    #get all dishes
+    #a user dishes created
     @dish_namespace.marshal_list_with(dish_view)
+    @jwt_required()
     def get(self):
-        dishes=Dish.query.all()
+        user_id=get_jwt_identity()
+
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        dishes = Dish.query.filter(Dish.user_id==user_id).order_by(Dish.date_posted.desc()).paginate(page=page, per_page=per_page)
+        print(dishes)
+        return dishes.items, 200, {'X-Total-Count': dishes.total}
+        
     
 
-        try:
-            return dishes, 200
-        except AttributeError as e:
-            print("Error serializing field: ", e)
-            return {'message': 'Error serializing data'}, 500
+        
     
         
     #posting your dish
@@ -80,8 +85,7 @@ class GetUpdateDeleteDish(Resource):
             dish.delete()
             return {"message":"dish deleted successfully"},200
         abort(403,message="you are not the owner of this account")
-    # creating an endpoint to handle the liking and disliking a dish
-
+# creating an endpoint to handle the liking and disliking a dish
 @dish_namespace.route("/likes/<int:id>")
 class postlikes(Resource):
         @jwt_required()

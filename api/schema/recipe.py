@@ -18,7 +18,7 @@ dish_view=dish_namespace.model("dishview",{
     "name":fields.String(required=True,description="name of the dish"),
     "instructions":fields.String(required=True,description="the instructions to follow while creating this dish"),
     "ingredients":fields.List(fields.String(),required=True,description="list of ingredients")
-    ,"date_posted":fields.DateTime(description="time it was posted"),
+    ,"date_posted":fields.DateTime(description="time it was posted",dt_format='rfc822'),
     "user_likes":fields.List(fields.Nested(User_signup),description="user who likes the dish"),
     "dish_image_url":fields.String(description="image url of the dish")
     ,"user_id":fields.Integer(description="user id ")
