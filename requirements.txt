@@ -11,3 +11,4 @@ flask-reuploaded
 marshmallow
 flask-socketio
 Werkzeug==2.2.2
+psycopg2
