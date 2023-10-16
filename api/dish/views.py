@@ -13,9 +13,13 @@ import traceback
 @dish_namespace.route("")
 class Recipes(Resource):
     #a user dishes created
+    @dish_namespace.doc(security="jwt")
     @dish_namespace.marshal_list_with(dish_view)
+    @dish_namespace.response(200,dish_view)
+    @dish_namespace.response(404,"Not found")
     @jwt_required()
     def get(self):
+        """dishes created by a particular user"""
         user_id=get_jwt_identity()
 
         page = request.args.get('page', 1, type=int)
@@ -23,7 +27,7 @@ class Recipes(Resource):
 
         dishes = Dish.query.filter(Dish.user_id==user_id).order_by(Dish.date_posted.desc()).paginate(page=page, per_page=per_page)
         print(dishes)
-        return dishes.items, 200, {'X-Total-Count': dishes.total}
+        return dishes.items, 200, {'X-Total-Count': dishes.total,"status":"success"}
         
     
 
@@ -32,8 +36,12 @@ class Recipes(Resource):
         
     #posting your dish
     @dish_namespace.expect(dish_create)
+    @dish_namespace.doc(security="jwt")
+    @dish_namespace.response(201,"dish created successfully")
+    @dish_namespace.response(400,"bad request")
     @jwt_required()
     def post(self):
+        """creating your dish """
         user_id=get_jwt_identity()
         data=dish_namespace.payload
         name=data.get("name")
@@ -42,18 +50,20 @@ class Recipes(Resource):
         new_dish=Dish(name=name,instructions=instructions,ingredients=ingredients,user_id=user_id)
         
         new_dish.save()
-        return {"message":"dish uploaded successfully"},201
+        return {"status":"success","message":"dish uploaded successfully"},201
 
 @dish_namespace.route("/<int:id>")
 class GetUpdateDeleteDish(Resource):
     #get a particular dish
     @dish_namespace.marshal_with(dish_create,envelope="resource")
+    @dish_namespace.response(200,dish_create)
+    @dish_namespace.response(404,"Not found")
     def get(self,id):
+        """get a particular dish"""
         dish=Dish.query.get_or_404(id)
-        print(dish.__dict__)  # print the keys of the 'Dish' object
-        print(dish_view.keys())  
+    
         
-        return  {
+        return  {"status":"success",
             "id": dish.id,
             "name": dish.name,
             "ingredients": dish.ingredients,
@@ -61,8 +71,13 @@ class GetUpdateDeleteDish(Resource):
         }, 200
     #creating an endpoint to update dishes
     @jwt_required()
+    @dish_namespace.doc(security="jwt")
     @dish_namespace.expect(dish_create)
+    @dish_namespace.response(200,"dish updated successfully")
+    @dish_namespace.response(404,"Not found")
+    @dish_namespace.response(403,"forbidden")
     def put(self,id):
+        """updating dishes"""
         user_id=get_jwt_identity()
         if Dish.query.filter(Dish.user_id==user_id).first():
             data=dish_namespace.payload
@@ -73,23 +88,34 @@ class GetUpdateDeleteDish(Resource):
                 dish.ingredients=data.get("ingredients")
                 dish.set_ingredients(dish.ingredients)
                 dish.update()
-                return {"message":"dish has been updated"}
-            abort(400,message="this post doesnt exist")
-        abort(403,message="you are not the owner of this account")
+                return {"status":"success","message":"dish has been updated"},200
+            abort(404,message="this post doesnt exist",status="error")
+        abort(403,message="you are not the owner of this account",status="error")
+
     #creating an endpoint to delete dish
+    @dish_namespace.response(200,"delete successful")
+    @dish_namespace.response(404,"Nor found")
+    @dish_namespace.response(403,"forbidden")
+    @dish_namespace.doc(security="jwt")
     @jwt_required()
     def delete(self,id):
+        """delete a dish"""
         user_id=get_jwt_identity()
         if Dish.query.filter(Dish.user_id==user_id).first():
             dish=Dish.query.get_or_404(id)
             dish.delete()
-            return {"message":"dish deleted successfully"},200
-        abort(403,message="you are not the owner of this account")
+            return {"status":"success","message":"dish deleted successfully"},200
+        abort(403,message="you are not the owner of this account",status="error")
 # creating an endpoint to handle the liking and disliking a dish
 @dish_namespace.route("/likes/<int:id>")
 class postlikes(Resource):
+        @dish_namespace.response(200,"like/dislike was successful")
+        @dish_namespace.response(404,"Not found")
+        @dish_namespace.response(403,"Forbidden")
+        @dish_namespace.doc(security="jwt")
         @jwt_required()
         def post(self,id):
+            """liking and disliking a dish"""
             user_id=get_jwt_identity()
             user=User.query.get(user_id)
             dish=Dish.query.get_or_404(id)
@@ -104,14 +130,19 @@ class postlikes(Resource):
                 updated_likes=len(dish.user_likes)
                 emit('like', {'dish_id': dish.id, 'like_count': updated_likes}, broadcast=True , namespace=dish_namespace)
 
-                return {"number_of_likes":updated_likes}
+                return {"status":"success","number_of_likes":updated_likes},200
 
-            abort(400,message="user doesnt exist")
+            abort(404,message="user doesnt exist",status="error")
 
 @dish_namespace.route("/image/<id>")
 class Imagee(Resource):
+    @dish_namespace.doc(security="jwt")
+    @dish_namespace.response(201,"image has been uploaded")
+    @dish_namespace.response(400,"bad request")
+    @dish_namespace.response(500,"Sever unavailable")
     @jwt_required()
     def put(self,id):
+        """uploading images"""
         # a put method used to upload the image , the image path is then saved in the database while the image is saved in a folder (static/images)
         data=ImageSchema().load(request.files)
         user_id=get_jwt_identity()
@@ -119,7 +150,6 @@ class Imagee(Resource):
         avatar_path=image_helper.find_image_format(data["image"].filename)
         if avatar_path:
             try:
-                print(avatar_path)
                 os.remove(avatar_path)
             except:
                 abort(500,message="avatar deletion failed")
@@ -132,16 +162,20 @@ class Imagee(Resource):
             dish.dish_image_url=file_path
             dish.update()
             basename=image_helper.get_basename(image_path)
-            return {"message":f"{basename} has been uploaded"},201
+            return {"status":"success","message":f"{basename} has been uploaded"},201
         except UploadNotAllowed:
             extension=image_helper.get_extension(data["image"])
-            return {"message":f"this {extension} is not allowed"},400
+            return {"status":"error","message":f"this {extension} is not allowed"},400
 
 
 @dish_namespace.route("/images/<id>")
 class image(Resource):
-# a get method for reading the images 
+# a get method for reading the images
+    @dish_namespace.response(200,"image viewed successfully")
+    @dish_namespace.response(404,"Not found")
+    @dish_namespace.response(500,"Sever unavailable")
     def get(self,id):
+        """reading of the images"""
         dish=Dish.query.get_or_404(id)
         image_path=dish.dish_image_url
         try:
@@ -154,20 +188,25 @@ class image(Resource):
             
             file_path_=os.path.join(current_dir,image_path)
             absolute_path=os.path.abspath(file_path_)
-            print(absolute_path)
+            
         
             return send_file(absolute_path)
 
    
 
         except FileNotFoundError:
-            abort(404,message=f"file not found ")
+            abort(404,message=f"file not found ",status="error")
+
+    @dish_namespace.doc(security="jwt")
+    @dish_namespace.response(201,"image deletion successful")
+    @dish_namespace.response(404,"Not found")
+    @dish_namespace.response(500,"Sever unavailable")
     @jwt_required()
     def delete(self,filename):
         user_id=get_jwt_identity()
         folder=f"user_{user_id}"
         if not image_helper.is_filename_safe(filename):
-            abort(400,message=f"this {filename} is not supported")
+            abort(400,message=f"this {filename} is not supported",status="error")
         try:
             # get the current working directory
             current_dir = os.getcwd()
@@ -179,16 +218,16 @@ class image(Resource):
             absolute_path=os.path.abspath(file_path_)
         
             os.remove(absolute_path)
-            return {"message":"image deleted successfully"}
+            return {"status":"success","message":"image deleted successfully"}
 
    
 
         except FileNotFoundError:
-            abort(404,message=f"file with name {filename} not found ")
+            abort(404,message=f"file with name {filename} not found ",status="error")
         
         except:
             traceback.print_exc()
-            abort(500,message="image deletion failed")
+            abort(500,message="image deletion failed",status="error")
 
 
 

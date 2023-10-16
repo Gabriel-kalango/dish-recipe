@@ -26,6 +26,7 @@ class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI=config('DATABASE_URL')
     DEBUG=False
     SQLALCHEMY_TRACK_MODIFICATIONS=False
+    SQLALCHEMY_ECHO=True
 
 config_dict = {
     'dev': DevConfig,
