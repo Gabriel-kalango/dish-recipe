@@ -7,7 +7,7 @@ User_signup=user_namespace.model("usersignup",{
     , "last_name":fields.String(required=True,description="the last name of the user"),
  "email":fields.String(required=True,description="the email of the user"),
  "password":fields.String(required=True,description="the password of the user"),
- "phone_number":fields.Integer(required=True,description="the phone number of the user")
+ "phone_number":fields.String(required=True,description="the phone number of the user")
 
 }) 
 # user log in schema for json serialization

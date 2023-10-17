@@ -22,7 +22,8 @@ class UserSignin(Resource):
             last_name=data.get("last_name")
             email=data.get("email")
             password=generate_password_hash(data.get("password"))
-            new_user=User(first_name=first_name,last_name=last_name,email=email,password=password)
+            phone_number=data.get("phone_number")
+            new_user=User(first_name=first_name,last_name=last_name,email=email,password=password,phone_number=phone_number)
             new_user.save()
             return {"status":"success","message":"user created successfully"},200
 @user_namespace.route("/login")
