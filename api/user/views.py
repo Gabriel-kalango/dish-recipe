@@ -2,7 +2,7 @@ from flask_restx import abort,Resource
 from werkzeug.security import check_password_hash,generate_password_hash
 from flask_jwt_extended import create_access_token,create_refresh_token,get_jwt_identity,get_jwt,jwt_required
 from ..models import User,BlockliskModel
-from ..schema import user_namespace,User_login,User_signup
+from ..schema import user_namespace,User_login,User_signup,User_signup_return
 
 @user_namespace.route("/register")
 class UserSignin(Resource):
@@ -10,6 +10,7 @@ class UserSignin(Resource):
     @user_namespace.expect(User_signup)
     @user_namespace.response(200,"user created successfully")
     @user_namespace.response(400,"user with this email already exists")
+    @user_namespace.marshal_with(User_signup_return)
     def post(self):
         """
             user registeration
@@ -25,7 +26,7 @@ class UserSignin(Resource):
             phone_number=data.get("phone_number")
             new_user=User(first_name=first_name,last_name=last_name,email=email,password=password,phone_number=phone_number)
             new_user.save()
-            return {"status":"success","message":"user created successfully"},200
+            return new_user,200
 @user_namespace.route("/login")
 class UserLogin(Resource):
     """endpoint for user logging in"""
