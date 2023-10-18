@@ -77,3 +77,8 @@ class Refresh(Resource):
         access_token = create_access_token(identity=id)
 
         return {"status":"success","access_token": access_token},201
+
+@user_namespace.route("/welcome")
+class HealthCheck(Resource):
+    def get(self):
+        return {"status":"success","message":"everything is okay"},200
