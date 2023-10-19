@@ -43,7 +43,7 @@ class UserLogin(Resource):
         if user and check_password_hash(user.password,data.get("password")):
             access_token=create_access_token(identity=user.id)
             refresh_token=create_refresh_token(identity=user.id)
-            return {"status":"success","id":user.id,"firstname":user.first_name,"last_name":user.last_name,"email":user.email,"access_token":access_token,"refresh_token":refresh_token},200
+            return {"status":"success","user":{"id":user.id,"firstname":user.first_name,"last_name":user.last_name,"email":user.email,"phone_number":user.phone_number},"credentials":{"access_token":access_token,"refresh_token":refresh_token}},200
         return {"status":"error","message":"invalid credentials"},400
     
 #endpoint for logging out users      
@@ -77,7 +77,7 @@ class Refresh(Resource):
 
         access_token = create_access_token(identity=id)
 
-        return {"status":"success","access_token": access_token},201
+        return {"status":"success","credentials":{"access_token": access_token}},201
 
 @user_namespace.route("/welcome")
 class HealthCheck(Resource):
