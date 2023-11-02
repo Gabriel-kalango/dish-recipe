@@ -9,6 +9,7 @@ from flask_uploads import UploadNotAllowed
 import os
 from mimetypes import guess_type
 import traceback
+from flask_jwt_extended.exceptions import NoAuthorizationError
 
 @dish_namespace.route("")
 class Recipes(Resource):
@@ -42,8 +43,8 @@ class Recipes(Resource):
     @jwt_required()
     def post(self):
         """creating your dish """
-        user_token=get_jwt()
-        if user_token is not None:
+        try:
+        
             user_id=get_jwt_identity()
             data=dish_namespace.payload
             name=data.get("name")
@@ -53,8 +54,9 @@ class Recipes(Resource):
             
             new_dish.save()
             return {"status":"success","message":"dish uploaded successfully"},201
-        else:
-            return {"status":"error","message":"Jwt_token not present"},404
+        except NoAuthorizationError as e:
+            return {"status": "error", "message": str(e)}, 401
+
 
 @dish_namespace.route("/<int:id>")
 class GetUpdateDeleteDish(Resource):
@@ -82,8 +84,7 @@ class GetUpdateDeleteDish(Resource):
     @dish_namespace.response(403,"forbidden")
     def put(self,id):
         """updating dishes"""
-        user_token=get_jwt()
-        if user_token is not None:
+        try:
             user_id=get_jwt_identity()
             if Dish.query.filter(Dish.user_id==user_id).first():
                 data=dish_namespace.payload
@@ -97,8 +98,9 @@ class GetUpdateDeleteDish(Resource):
                     return {"status":"success","message":"dish has been updated"},200
                 abort(404,message="this post doesnt exist",status="error")
             abort(403,message="you are not the owner of this account",status="error")
-        else:
-            return {"status":"error","message":"Jwt_token not present"},404
+        except NoAuthorizationError as e:
+            return {"status": "error", "message": str(e)}, 401
+
 
 
     #creating an endpoint to delete dish
@@ -109,16 +111,16 @@ class GetUpdateDeleteDish(Resource):
     @jwt_required()
     def delete(self,id):
         """delete a dish"""
-        user_token=get_jwt()
-        if user_token is not None:
+        try:
             user_id=get_jwt_identity()
             if Dish.query.filter(Dish.user_id==user_id).first():
                 dish=Dish.query.get_or_404(id)
                 dish.delete()
                 return {"status":"success","message":"dish deleted successfully"},200
             abort(403,message="you are not the owner of this account",status="error")
-        else:
-            return {"status":"error","message":"Jwt_token not present"},404
+        except NoAuthorizationError as e:
+            return {"status": "error", "message": str(e)}, 401
+
 
 # creating an endpoint to handle the liking and disliking a dish
 @dish_namespace.route("/likes/<int:id>")
@@ -130,8 +132,7 @@ class postlikes(Resource):
         @jwt_required()
         def post(self,id):
             """liking and disliking a dish"""
-            user_token=get_jwt()
-            if user_token:
+            try:
                 user_id=get_jwt_identity()
                 user=User.query.get(user_id)
                 dish=Dish.query.get_or_404(id)
@@ -149,8 +150,9 @@ class postlikes(Resource):
                     return {"status":"success","number_of_likes":updated_likes},200
 
                 abort(404,message="user doesnt exist",status="error")
-            else:
-                return {"status":"error","message":"Jwt_token not present"},404
+            except NoAuthorizationError as e:
+                return {"status": "error", "message": str(e)}, 401
+
 
 
 @dish_namespace.route("/image/<id>")
@@ -163,8 +165,7 @@ class Imagee(Resource):
     def put(self,id):
         """uploading images"""
         # a put method used to upload the image , the image path is then saved in the database while the image is saved in a folder (static/images)
-        user_token=get_jwt()
-        if user_token is not None:
+        try:
             data=ImageSchema().load(request.files)
             user_id=get_jwt_identity()
             
@@ -188,8 +189,9 @@ class Imagee(Resource):
                 extension=image_helper.get_extension(data["image"])
                 return {"status":"error","message":f"this {extension} is not allowed"},400
 
-        else:
-            return {"status":"error","message":"Jwt_token not present"},404
+        except NoAuthorizationError as e:
+            return {"status": "error", "message": str(e)}, 401
+
 
 @dish_namespace.route("/images/<id>")
 class image(Resource):
@@ -226,8 +228,7 @@ class image(Resource):
     @dish_namespace.response(500,"Sever unavailable")
     @jwt_required()
     def delete(self,filename):
-        user_token=get_jwt()
-        if user_token is not None:
+        try:
             user_id=get_jwt_identity()
             folder=f"user_{user_id}"
             if not image_helper.is_filename_safe(filename):
@@ -253,8 +254,8 @@ class image(Resource):
             except:
                 traceback.print_exc()
                 abort(500,message="image deletion failed",status="error")
-        else:
-            return {"status":"error","message":"Jwt_token not present"},404
+        except NoAuthorizationError as e:
+            return {"status": "error", "message": str(e)}, 401
 
 
 
