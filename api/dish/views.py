@@ -15,7 +15,7 @@ from flask_jwt_extended.exceptions import NoAuthorizationError
 class Recipes(Resource):
     #a user dishes created
     @dish_namespace.doc(security="jwt")
-    @dish_namespace.marshal_list_with(dish_view)
+    @dish_namespace.marshal_with(dish_view,envelope='recipes')
     @dish_namespace.response(200,dish_view)
     @dish_namespace.response(404,"Not found")
     @jwt_required()
@@ -27,9 +27,8 @@ class Recipes(Resource):
         per_page = request.args.get('per_page', 10, type=int)
 
         dishes = Dish.query.filter(Dish.user_id==user_id).order_by(Dish.date_posted.desc()).paginate(page=page, per_page=per_page)
-        print(dishes)
-        return dishes.items, 200, {'X-Total-Count': dishes.total,"status":"success"}
         
+        return  dishes.items,{ 'X-Total-Count': dishes.total, 'status': 'success'}, 200
     
 
         
@@ -69,11 +68,11 @@ class GetUpdateDeleteDish(Resource):
         dish=Dish.query.get_or_404(id)
     
         
-        return  {"status":"success",
+        return  {"status":"success","recipe":{
             "id": dish.id,
             "name": dish.name,
             "ingredients": dish.ingredients,
-            "instructions": dish.instructions,
+            "instructions": dish.instructions,}
         }, 200
     #creating an endpoint to update dishes
     @jwt_required()
