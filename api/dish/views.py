@@ -14,25 +14,22 @@ from flask_jwt_extended.exceptions import NoAuthorizationError
 @dish_namespace.route("")
 class Recipes(Resource):
     #a user dishes created
-    @dish_namespace.doc(security="jwt")
+    
     @dish_namespace.marshal_with(dish_view,envelope='recipes')
     @dish_namespace.response(200,dish_view)
     @dish_namespace.response(404,"Not found")
-    @jwt_required()
     def get(self):
-        """dishes created by a particular user"""
-        user_id=get_jwt_identity()
-
+    
+        """ all the dishes created"""
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
 
-        dishes = Dish.query.filter(Dish.user_id==user_id).order_by(Dish.date_posted.desc()).paginate(page=page, per_page=per_page)
+        dishes = Dish.query.order_by(Dish.date_posted.desc()).paginate(page=page, per_page=per_page)
         
-        return  dishes.items,{ 'X-Total-Count': dishes.total, 'status': 'success'}, 200
+        return  dishes.items,200,{ 'X-Total-Count': dishes.total, 'status': 'success'}
     
 
         
-    
         
     #posting your dish
     @dish_namespace.expect(dish_create)
@@ -255,6 +252,25 @@ class image(Resource):
                 abort(500,message="image deletion failed",status="error")
         except NoAuthorizationError as e:
             return {"status": "error", "message": str(e)}, 401
+@dish_namespace.route("/user")
+class UserSpecificDish(Resource):
+    @dish_namespace.doc(security="jwt")
+    @dish_namespace.marshal_with(dish_view,envelope='recipes')
+    @dish_namespace.response(200,dish_view)
+    @dish_namespace.response(404,"Not found")
+    @jwt_required()
+    def get(self):
+        """dishes created by a particular user"""
+        user_id=get_jwt_identity()
 
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+
+        dishes = Dish.query.filter(Dish.user_id==user_id).order_by(Dish.date_posted.desc()).paginate(page=page, per_page=per_page)
+        
+        return  dishes.items,200,{ 'X-Total-Count': dishes.total, 'status': 'success'}
+    
+
+        
 
 
